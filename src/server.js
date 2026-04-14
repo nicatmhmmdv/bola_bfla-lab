@@ -106,6 +106,12 @@ app.get('/api/v1/resources/:id', authentication, async (req, res) => {
     {
         const id = req.params.id;
         const result = await pool.query('select * from resources where id = $1', [id]);
+        
+        // ###########################  SECURE  ###########################
+        // if (id !== req.user.id) 
+        // {
+        //     return res.status(401).json({message: 'not authorized'});
+        // }
 
         if (result.rows.length > 0)
         {
