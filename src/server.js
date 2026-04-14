@@ -22,6 +22,31 @@ app.use(express.json()); //to parse json
 
 // })();
 
+// AUTHENTICATION MIDDLEWARE
+function authentication(req, res, next)
+{
+    const auth_header = req.headers.authorization;
+    if (!auth_header)
+    {
+        return res.status(401).json({message: 'Something went wrong!'});
+    }
+
+    try 
+    {
+        const token = auth_header.split(' ')[1];
+        //jwt.verify(token, process.env.jwt_secret); returns decoded payload
+        decoded = jwt.verify(token, process.env.jwt_secret);
+
+        req.user = decoded;
+        next();
+    }
+    catch(err)
+    {
+        return res.status(403).json({message: 'Something went wrong!'});
+    }
+}
+
+
 // /api/v1/login
 app.post('/api/v1/login', async (req, res) => {
     try {
@@ -74,6 +99,26 @@ app.post('/api/v1/register', async(req, res) => {
         console.error(err.message);
         return res.status(500).json({error: 'UNEXPECTED'});
     }
+});
+
+app.get('/api/v1/resources/:id', authentication, async (req, res) => {
+    try 
+    {
+        const id = req.params.id;
+        const result = await pool.query('select * from resources where id = $1', [id]);
+
+        if (result.rows.length > 0)
+        {
+            res.status(200).json({message: 'Here is some notes', notes: result.rows[0]});
+        }
+    }
+    catch(err)
+    {
+        console.log(err.message);
+        return res.status(500).json({error: 'UNEXPECTED'});
+    }
+
+
 });
 
 const port = process.env.port;
