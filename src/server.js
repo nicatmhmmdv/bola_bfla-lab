@@ -8,7 +8,7 @@ const pool = require('./db');
 //app.use('/api/auth', authRoutes);                 "prefix"
 app.use(express.json()); //to parse json
 
-//######################## TEST DB CONNECTION##############
+//######################## TEST DB CONNECTION ##############
 // (async () =>  {
 //     try {
 //         const res = await pool.query('select now()');
@@ -104,19 +104,22 @@ app.post('/api/v1/register', async(req, res) => {
 app.get('/api/v1/resources/:id', authentication, async (req, res) => {
     try 
     {
-        const id = req.params.id;
-        const result = await pool.query('select * from resources where id = $1', [id]);
+        const resource_id = req.params.id;
+        const result = await pool.query('select * from resources where id = $1', [resource_id]);
         
+
         // ###########################  SECURE  ###########################
-        // if (id !== req.user.id) 
+        // if (req.user.id !== result.rows[0].owner_id) 
         // {
         //     return res.status(401).json({message: 'not authorized'});
         // }
 
-        if (result.rows.length > 0)
+        if (result.rows.length === 0)
         {
-            res.status(200).json({message: 'Here is some notes', notes: result.rows[0]});
+            res.status(404).json({message: 'not found!'});
         }
+
+        res.status(200).json({message: 'Here is some notes', notes: result.rows[0]});
     }
     catch(err)
     {
