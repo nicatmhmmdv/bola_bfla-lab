@@ -22,6 +22,19 @@ app.use(express.json()); //to parse json
 
 // })();
 
+// AUTHORIZATION MIDDLEWARE
+function authorization_for_admin(req, res, next)
+{
+    if (req.user.role === 'admin')
+    {
+        next();
+    }
+    else
+    {
+        return res.status(403).json({message: "Forbidden!"});
+    }
+}
+
 // AUTHENTICATION MIDDLEWARE
 function authentication(req, res, next)
 {
@@ -64,7 +77,7 @@ app.post('/api/v1/login', async (req, res) => {
             role: result.role,
             context: 'access_token'
         };
-        token = jwt.sign(payload, process.env.jwt_secret, {expiresIn: '1h'});
+        const token = jwt.sign(payload, process.env.jwt_secret, {expiresIn: '1h'}); //without "const" variable will be global. It could cause race condition
         res.json({message: 'Login successful', token: token});
         //without jwt
         //res.json({message: 'Login successful', user: {id: result.id, username: result.username, role: result.role}});
@@ -116,7 +129,7 @@ app.get('/api/v1/resources/:id', authentication, async (req, res) => {
 
         if (result.rows.length === 0)
         {
-            res.status(404).json({message: 'not found!'});
+            return res.status(404).json({message: 'not found!'});
         }
 
         res.status(200).json({message: 'Here is some notes', notes: result.rows[0]});
@@ -128,6 +141,20 @@ app.get('/api/v1/resources/:id', authentication, async (req, res) => {
     }
 
 
+});
+
+// ############################## BFLA ####################################
+app.get('/api/v1/admin/users', authentication, authorization_for_admin, async (req, res) => {
+    try 
+    {
+        const users = await pool.query('select * from users');
+        res.status(200).json({message: "Here is all the users: ", users: users.rows});
+    }
+    catch(err)
+    {
+        console.log(err.message);
+        res.status(500).json({message: "UNEXPECTED"});
+    }
 });
 
 const port = process.env.port;
